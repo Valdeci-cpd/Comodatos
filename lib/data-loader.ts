@@ -105,20 +105,25 @@ function normalizeColumnNames(data: RawRow[]): RawRow[] {
 function parseDate(dateValue: any): string | null {
   if (!dateValue) return null
 
-  let date: Date
+  let date: Date | null = null
   if (typeof dateValue === 'number') {
     // Excel serial date
     const excelEpoch = new Date(1900, 0, 1)
     date = new Date(excelEpoch.getTime() + (dateValue - 1) * 24 * 60 * 60 * 1000)
   } else if (typeof dateValue === 'string') {
-    date = new Date(dateValue)
+    const trimmed = dateValue.trim()
+    const brazilianMatch = /^([0-9]{1,2})\/([0-9]{1,2})\/([0-9]{4})$/.exec(trimmed)
+    if (brazilianMatch) {
+      const [, day, month, year] = brazilianMatch
+      date = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`)
+    } else {
+      date = new Date(trimmed)
+    }
   } else if (dateValue instanceof Date) {
     date = dateValue
-  } else {
-    return null
   }
 
-  if (isNaN(date.getTime())) return null
+  if (!date || isNaN(date.getTime())) return null
 
   return date.toISOString().split('T')[0]
 }
